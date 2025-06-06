@@ -42,8 +42,13 @@ func Test(t *testing.T) {
 		ListField:        []string{"zero", "one"},
 		ListTypedefField: []StringType{StringType("zero"), StringType("one")},
 	}).OldValue(&Struct{
-		// Same data, different order.
+		// Same data, different order - should still fail.
 		ListField:        []string{"one", "zero"},
 		ListTypedefField: []StringType{StringType("one"), StringType("zero")},
-	}).ExpectValid()
+	}).ExpectValidateFalseByPath(map[string][]string{
+		"listField[0]":        {"field Struct.ListField[*]"},
+		"listField[1]":        {"field Struct.ListField[*]"},
+		"listTypedefField[0]": {"field Struct.ListTypedefField[*]"},
+		"listTypedefField[1]": {"field Struct.ListTypedefField[*]"},
+	})
 }

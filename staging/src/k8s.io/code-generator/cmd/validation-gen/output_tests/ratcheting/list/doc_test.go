@@ -54,7 +54,7 @@ func Test_StructSlice(t *testing.T) {
 		SliceNonComparableStructField: []NonDirectComparableStruct{{IntPtrField: ptr.To(1)}},
 	}).ExpectValid()
 
-	// New elements exist in old.
+	// New elements exist in old, but this is not a set.
 	st.Value(&StructSlice{
 		SliceField:                    []S{""},
 		TypeDefSliceField:             MySlice{1},
@@ -65,7 +65,14 @@ func Test_StructSlice(t *testing.T) {
 		TypeDefSliceField:             MySlice{1, 2},
 		SliceStructField:              []DirectComparableStruct{{IntField: 2}, {IntField: 1}},
 		SliceNonComparableStructField: []NonDirectComparableStruct{{IntPtrField: ptr.To(2)}, {IntPtrField: ptr.To(1)}},
-	}).ExpectValid()
+	}).ExpectMatches(field.ErrorMatcher{}.ByType().ByField(), field.ErrorList{
+		field.Invalid(field.NewPath("sliceField[0]"), "", ""),
+		//field.Invalid(field.NewPath("typedefSliceField[0]"), "", ""),
+		//field.Invalid(field.NewPath("sliceStructField[0]"), "", ""),
+		//field.Invalid(field.NewPath("sliceNonComparableStructField[0]"), "", ""),
+		//field.Invalid(field.NewPath("sliceStructWithKey[0]"), "", ""),
+		//field.Invalid(field.NewPath("sliceNonComparableStructWithKey[0]"), "", ""),
+	})
 
 	// No changes.
 	st.Value(&StructSlice{

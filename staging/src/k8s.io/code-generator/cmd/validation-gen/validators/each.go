@@ -313,12 +313,20 @@ func (evtv eachValTagValidator) getListValidations(fldPath *field.Path, t *types
 		// equivArg is the function that is used to compare the correlated elements in the old and new lists.
 		// It would be "nil" if the matchArg is a full comparison function.
 		var equivArg any = Literal("nil")
+
+		isMap := listMetadata != nil && listMetadata.declaredAsMap
+		isSet := listMetadata != nil && listMetadata.declaredAsSet
+
 		// directComparable is used to determine whether we can use the direct
 		// comparison operator "==" or need to use the semantic DeepEqual when
 		// looking up and comparing correlated list elements for validation ratcheting.
-		directComparable := util.IsDirectComparable(util.NonPointer(util.NativeType(t.Elem)))
+		directComparable := false
+		if isMap || isSet {
+			directComparable = util.IsDirectComparable(util.NonPointer(util.NativeType(t.Elem)))
+		}
+
 		switch {
-		case listMetadata != nil && listMetadata.declaredAsMap:
+		case isMap:
 			// Emit the comparison by keys when listType=map
 			matchFn := FunctionLiteral{
 				Parameters: []ParamResult{{"a", t.Elem}, {"b", t.Elem}},
@@ -341,19 +349,21 @@ func (evtv eachValTagValidator) getListValidations(fldPath *field.Path, t *types
 			} else {
 				equivArg = Identifier(validateSemanticDeepEqual)
 			}
-		case directComparable:
-			// Emit the matchArg as a simple comparison when possible.
-			// Slices and maps are not comparable, and structs might hold
-			// pointer fields, which are directly comparable but not what we need.
-			//
-			// Note: This compares the pointee, not the pointer itself.
-			matchArg = Identifier(validateDirectEqual)
-
+		case isSet:
+			if directComparable {
+				// Emit the matchArg as a simple comparison when possible.
+				// Slices and maps are not comparable, and structs might hold
+				// pointer fields, which are directly comparable but not what we need.
+				//
+				// Note: This compares the pointee, not the pointer itself.
+				matchArg = Identifier(validateDirectEqual)
+			} else {
+				// Emit semantic comparison by default when the element cannot be
+				// directly compared.
+				matchArg = Identifier(validateSemanticDeepEqual)
+			}
 		default:
-			// Emit semantic comparison by default when the element cannot be
-			// directly compared.
-			matchArg = Identifier(validateSemanticDeepEqual)
-
+			// No match or equiv for simple lists.
 		}
 		f := Function(eachValTagName, vfn.Flags, validateEachSliceVal, matchArg, equivArg, WrapperFunction{vfn, t.Elem})
 		result.Functions = append(result.Functions, f)

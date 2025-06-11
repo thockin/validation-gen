@@ -119,6 +119,26 @@ func (lm *listMetadata) makeListMapMatchFunc(t *types.Type) FunctionLiteral {
 	return matchFn
 }
 
+// makeErrvalFunc generates a function that converts a list element to a map of
+// field names to values.  This is used to return errors that only indicate the
+// list-map key, not the whole struct.
+func (lm *listMetadata) makeErrvalFunc(t *types.Type) FunctionLiteral {
+	rndFn := FunctionLiteral{
+		Parameters: []ParamResult{{"x", t}},
+		Results:    []ParamResult{{"", types.Any}},
+	}
+	buf := strings.Builder{}
+	buf.WriteString("return map[string]any{\n")
+	// Note: this does not handle pointer fields, which are not
+	// supposed to be used as listMap keys.
+	for i := range lm.keyFields {
+		buf.WriteString(`"` + lm.keyNames[i] + `": x.` + lm.keyFields[i] + ",\n")
+	}
+	buf.WriteString("}\n")
+	rndFn.Body = buf.String()
+	return rndFn
+}
+
 type listTypeTagValidator struct {
 	byPath map[string]*listMetadata
 }
@@ -320,7 +340,7 @@ func (lv listValidator) GetValidations(context Context) (Validations, error) {
 		if util.IsDirectComparable(util.NonPointer(util.NativeType(nt.Elem))) {
 			matchArg = validateDirectEqual
 		}
-		f := Function("listValidator", DefaultFlags, validateUnique, Identifier(matchArg)).
+		f := Function("listValidator", DefaultFlags, validateUnique, Identifier(matchArg), Literal("nil")).
 			WithComment("listType=set requires unique values")
 		result.AddFunction(f)
 	}
@@ -331,7 +351,8 @@ func (lv listValidator) GetValidations(context Context) (Validations, error) {
 		// is also not able to handle these well.
 
 		matchArg := lm.makeListMapMatchFunc(nt.Elem)
-		f := Function("listValidator", DefaultFlags, validateUnique, matchArg).
+		renderArg := lm.makeErrvalFunc(nt.Elem)
+		f := Function("listValidator", DefaultFlags, validateUnique, matchArg, renderArg).
 			WithComment("listType=map requires unique keys")
 		result.AddFunction(f)
 	}

@@ -119,11 +119,17 @@ func EachMapKey[K ~string, T any](ctx context.Context, op operation.Operation, f
 	return errs
 }
 
+// ErrvalFunc is a function that converts a given type into another type for use
+// in error messages.
+type ErrvalFunc[T any] func(T) any
+
 // Unique verifies that each element of newSlice is unique, according to the
 // match function. It compares every element of the slice with every other
-// element and returns errors for non-unique items.
-func Unique[T any](_ context.Context, _ operation.Operation, fldPath *field.Path, newSlice, _ []T, match MatchFunc[T]) field.ErrorList {
-	var dups []int
+// element and returns errors for non-unique items. If the toErrval function is
+// provided, it is used to convert the value into a simpler type in case an
+// error is generated.
+func Unique[T any](_ context.Context, _ operation.Operation, fldPath *field.Path, newSlice, _ []T, match MatchFunc[T], toErrval ErrvalFunc[T]) field.ErrorList {
+	dups := make([]int, 0, len(newSlice))
 	for i, val := range newSlice {
 		for j := i + 1; j < len(newSlice); j++ {
 			other := newSlice[j]
@@ -142,11 +148,9 @@ func Unique[T any](_ context.Context, _ operation.Operation, fldPath *field.Path
 	sort.Ints(dups)
 	for _, i := range dups {
 		var val any = newSlice[i]
-		// TODO: we don't want the whole item to be logged in the error, just
-		// the key(s). Unfortunately, the way errors are rendered, it comes out
-		// as something like "map[string]any{...}" which is not very nice. Once
-		// that is fixed, we can consider adding a way for this function to
-		// specify that just the keys should be rendered in the error.
+		if toErrval != nil {
+			val = toErrval(newSlice[i])
+		}
 		errs = append(errs, field.Duplicate(fldPath.Index(i), val))
 	}
 	return errs

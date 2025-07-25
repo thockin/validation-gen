@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type pathOptions struct {
@@ -56,6 +57,15 @@ type Path2 struct {
 	arr   [8]string // big enough for most cases
 	elems []string
 }
+type Path3 func() string
+
+func join(name string, moreNames ...string) string {
+	s := name
+	if len(moreNames) > 0 {
+		s += "." + strings.Join(moreNames, ".")
+	}
+	return s
+}
 
 // NewPath creates a root Path object.
 func NewPath(name string, moreNames ...string) *Path {
@@ -74,6 +84,11 @@ func NewPath2(name string, moreNames ...string) Path2 {
 	}
 	return p
 }
+func NewPath3(name string, moreNames ...string) Path3 {
+	return func() string {
+		return join(name, moreNames...)
+	}
+}
 
 // Root returns the root element of this Path.
 func (p *Path) Root() *Path {
@@ -89,6 +104,10 @@ func (p Path2) Root() Path2 {
 	p.elems = p.arr[:1]
 	return p
 }
+func (p Path3) Root() Path3 {
+	//FIXME:
+	return func() string { return "not implemented" }
+}
 
 // Child creates a new Path that is a child of the method receiver.
 func (p *Path) Child(name string, moreNames ...string) *Path {
@@ -103,6 +122,11 @@ func (p Path2) Child(name string, moreNames ...string) Path2 {
 	}
 	return p
 }
+func (p Path3) Child(name string, moreNames ...string) Path3 {
+	return func() string {
+		return p.String() + "." + join(name, moreNames...)
+	}
+}
 
 // Index indicates that the previous Path is to be subscripted by an int.
 // This sets the same underlying value as Key.
@@ -113,6 +137,11 @@ func (p Path2) Index(index int) Path2 {
 	p.elems[len(p.elems)-1] += "[" + strconv.Itoa(index) + "]"
 	return p
 }
+func (p Path3) Index(index int) Path3 {
+	return func() string {
+		return p.String() + "[" + strconv.Itoa(index) + "]"
+	}
+}
 
 // Key indicates that the previous Path is to be subscripted by a string.
 // This sets the same underlying value as Index.
@@ -122,6 +151,11 @@ func (p *Path) Key(key string) *Path {
 func (p Path2) Key(key string) Path2 {
 	p.elems[len(p.elems)-1] += "[" + key + "]"
 	return p
+}
+func (p Path3) Key(key string) Path3 {
+	return func() string {
+		return p.String() + "[" + key + "]"
+	}
 }
 
 // String produces a string representation of the Path.
@@ -166,4 +200,7 @@ func (p Path2) String() string {
 		buf.WriteString(e)
 	}
 	return buf.String()
+}
+func (p Path3) String() string {
+	return p()
 }

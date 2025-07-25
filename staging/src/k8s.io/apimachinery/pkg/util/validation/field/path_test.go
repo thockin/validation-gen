@@ -180,6 +180,62 @@ func TestPath2(t *testing.T) {
 	}
 }
 
+func TestPath3(t *testing.T) {
+	testCases := []struct {
+		op       func(Path3) Path3
+		expected string
+	}{
+		{
+			func(p Path3) Path3 { return p },
+			"root",
+		},
+		{
+			func(p Path3) Path3 { return p.Child("first") },
+			"root.first",
+		},
+		{
+			func(p Path3) Path3 { return p.Child("second") },
+			"root.first.second",
+		},
+		{
+			func(p Path3) Path3 { return p.Index(0) },
+			"root.first.second[0]",
+		},
+		{
+			func(p Path3) Path3 { return p.Child("third") },
+			"root.first.second[0].third",
+		},
+		{
+			func(p Path3) Path3 { return p.Index(93) },
+			"root.first.second[0].third[93]",
+		},
+		{
+			func(p Path3) Path3 { return p.Child("fourth") },
+			"root.first.second[0].third[93].fourth",
+		},
+		{
+			func(p Path3) Path3 { return p.Key("k") },
+			"root.first.second[0].third[93].fourth[k]",
+		},
+		{
+			func(p Path3) Path3 { return p.Root() },
+			"root",
+		},
+	}
+
+	root := NewPath3("root")
+	p := root
+	for i, tc := range testCases {
+		p = tc.op(p)
+		if p.String() != tc.expected {
+			t.Errorf("[%d] Expected %q, got %q", i, tc.expected, p.String())
+		}
+		if p.Root().String() != "root" {
+			t.Errorf("[%d] Wrong root: %#v", i, p.Root())
+		}
+	}
+}
+
 func BenchmarkPath(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -193,6 +249,14 @@ func BenchmarkPath2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		root := NewPath2("root")
 		f2(root, i%8)
+	}
+}
+
+func BenchmarkPath3(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		root := NewPath3("root")
+		f3(root, i%8)
 	}
 }
 
@@ -210,6 +274,14 @@ func f2(p Path2, n int) string {
 		return p.String()
 	}
 	return f2(p.Child("child").Index(0), n-1)
+}
+
+//go:noinline
+func f3(p Path3, n int) string {
+	if n == 0 {
+		return p.String()
+	}
+	return f3(p.Child("child").Index(0), n-1)
 }
 
 /*

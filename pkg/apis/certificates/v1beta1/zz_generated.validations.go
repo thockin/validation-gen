@@ -124,6 +124,10 @@ func Validate_CertificateSigningRequestStatus(ctx context.Context, op operation.
 			// listType=map requires unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a certificatesv1beta1.CertificateSigningRequestCondition, b certificatesv1beta1.CertificateSigningRequestCondition) bool {
 				return a.Type == b.Type
+			}, func(x certificatesv1beta1.CertificateSigningRequestCondition) any {
+				return map[string]any{
+					"type": x.Type,
+				}
 			})...)
 			errs = append(errs, validate.ZeroOrOneOfUnion(ctx, op, fldPath, obj, oldObj, zeroOrOneOfMembershipFor_k8s_io_api_certificates_v1beta1_CertificateSigningRequestStatus_Conditions_, func(list []certificatesv1beta1.CertificateSigningRequestCondition) bool {
 				for i := range list {

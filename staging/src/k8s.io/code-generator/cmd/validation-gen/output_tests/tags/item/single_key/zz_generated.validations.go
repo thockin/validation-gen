@@ -71,7 +71,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			}
 			// call field-attached validations
 			// listType=map requires unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a Item, b Item) bool { return a.Key == b.Key })...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a Item, b Item) bool { return a.Key == b.Key }, func(x Item) any {
+				return map[string]any{
+					"key": x.Key,
+				}
+			})...)
 			func() { // cohort {"key": "target"}
 				errs = append(errs, validate.SliceItem(ctx, op, fldPath, obj, oldObj, func(item *Item) bool { return item.Key == "target" }, validate.DirectEqual, func(ctx context.Context, op operation.Operation, fldPath *field.Path, obj, oldObj *Item) field.ErrorList {
 					return validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "item Items[key=target] 1")
@@ -92,7 +96,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			}
 			// call field-attached validations
 			// listType=map requires unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a IntKeyItem, b IntKeyItem) bool { return a.IntField == b.IntField })...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a IntKeyItem, b IntKeyItem) bool { return a.IntField == b.IntField }, func(x IntKeyItem) any {
+				return map[string]any{
+					"intField": x.IntField,
+				}
+			})...)
 			func() { // cohort {"intField": 42}
 				errs = append(errs, validate.SliceItem(ctx, op, fldPath, obj, oldObj, func(item *IntKeyItem) bool { return item.IntField == 42 }, validate.DirectEqual, func(ctx context.Context, op operation.Operation, fldPath *field.Path, obj, oldObj *IntKeyItem) field.ErrorList {
 					return validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "item IntKeyItems[intField=42] 1")
@@ -113,7 +121,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			}
 			// call field-attached validations
 			// listType=map requires unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a BoolKeyItem, b BoolKeyItem) bool { return a.BoolField == b.BoolField })...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a BoolKeyItem, b BoolKeyItem) bool { return a.BoolField == b.BoolField }, func(x BoolKeyItem) any {
+				return map[string]any{
+					"boolField": x.BoolField,
+				}
+			})...)
 			func() { // cohort {"boolField": true}
 				errs = append(errs, validate.SliceItem(ctx, op, fldPath, obj, oldObj, func(item *BoolKeyItem) bool { return item.BoolField == true }, validate.DirectEqual, func(ctx context.Context, op operation.Operation, fldPath *field.Path, obj, oldObj *BoolKeyItem) field.ErrorList {
 					return validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "item BoolKeyItems[boolField=true] 1")
@@ -134,7 +146,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			}
 			// call field-attached validations
 			// listType=map requires unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a TypedefItem, b TypedefItem) bool { return a.ID == b.ID })...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a TypedefItem, b TypedefItem) bool { return a.ID == b.ID }, func(x TypedefItem) any {
+				return map[string]any{
+					"id": x.ID,
+				}
+			})...)
 			func() { // cohort {"id": "typedef-target"}
 				errs = append(errs, validate.SliceItem(ctx, op, fldPath, obj, oldObj, func(item *TypedefItem) bool { return item.ID == "typedef-target" }, validate.DirectEqual, func(ctx context.Context, op operation.Operation, fldPath *field.Path, obj, oldObj *TypedefItem) field.ErrorList {
 					return validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "item TypedefItems[id=typedef-target] 1")
@@ -163,7 +179,11 @@ func Validate_StructWithNestedTypedef(ctx context.Context, op operation.Operatio
 			}
 			// call field-attached validations
 			// listType=map requires unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a NestedTypedefItem, b NestedTypedefItem) bool { return a.Key == b.Key })...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a NestedTypedefItem, b NestedTypedefItem) bool { return a.Key == b.Key }, func(x NestedTypedefItem) any {
+				return map[string]any{
+					"key": x.Key,
+				}
+			})...)
 			func() { // cohort {"key": "nested-target"}
 				errs = append(errs, validate.SliceItem(ctx, op, fldPath, obj, oldObj, func(item *NestedTypedefItem) bool { return item.Key == "nested-target" }, validate.DirectEqual, func(ctx context.Context, op operation.Operation, fldPath *field.Path, obj, oldObj *NestedTypedefItem) field.ErrorList {
 					return validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "item NestedItems[key=nested-target]")

@@ -351,7 +351,11 @@ func Validate_T1(ctx context.Context, op operation.Operation, fldPath *field.Pat
 				return validate.FixedResult(ctx, op, fldPath, obj, oldObj, true, "field T1.SliceOfOtherStruct values")
 			})...)
 			// listType=map requires unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a other.StructType, b other.StructType) bool { return a.StringField == b.StringField })...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a other.StructType, b other.StructType) bool { return a.StringField == b.StringField }, func(x other.StructType) any {
+				return map[string]any{
+					"stringField": x.StringField,
+				}
+			})...)
 			return
 		}(fldPath.Child("listMapOfOtherStruct"), obj.ListMapOfOtherStruct, safe.Field(oldObj, func(oldObj *T1) []other.StructType { return oldObj.ListMapOfOtherStruct }))...)
 

@@ -55,6 +55,11 @@ func Validate_ListType(ctx context.Context, op operation.Operation, fldPath *fie
 	// listType=map requires unique keys
 	errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a OtherStruct, b OtherStruct) bool {
 		return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
+	}, func(x OtherStruct) any {
+		return map[string]any{
+			"key1Field": x.Key1Field,
+			"key2Field": x.Key2Field,
+		}
 	})...)
 
 	return errs
@@ -79,6 +84,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			// listType=map requires unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a OtherStruct, b OtherStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
+			}, func(x OtherStruct) any {
+				return map[string]any{
+					"key1Field": x.Key1Field,
+					"key2Field": x.Key2Field,
+				}
 			})...)
 			return
 		}(fldPath.Child("listField"), obj.ListField, safe.Field(oldObj, func(oldObj *Struct) []OtherStruct { return oldObj.ListField }))...)
@@ -97,6 +107,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			// listType=map requires unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a OtherTypedefStruct, b OtherTypedefStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
+			}, func(x OtherTypedefStruct) any {
+				return map[string]any{
+					"key1Field": x.Key1Field,
+					"key2Field": x.Key2Field,
+				}
 			})...)
 			return
 		}(fldPath.Child("listTypedefField"), obj.ListTypedefField, safe.Field(oldObj, func(oldObj *Struct) []OtherTypedefStruct { return oldObj.ListTypedefField }))...)
@@ -133,6 +148,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			// listType=map requires unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a OtherStruct, b OtherStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
+			}, func(x OtherStruct) any {
+				return map[string]any{
+					"key1Field": x.Key1Field,
+					"key2Field": x.Key2Field,
+				}
 			})...)
 			return
 		}(fldPath.Child("listComparableField"), obj.ListComparableField, safe.Field(oldObj, func(oldObj *Struct) []OtherStruct { return oldObj.ListComparableField }))...)
@@ -153,6 +173,11 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 			// listType=map requires unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a NonComparableStruct, b NonComparableStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
+			}, func(x NonComparableStruct) any {
+				return map[string]any{
+					"key1Field": x.Key1Field,
+					"key2Field": x.Key2Field,
+				}
 			})...)
 			return
 		}(fldPath.Child("listNonComparableField"), obj.ListNonComparableField, safe.Field(oldObj, func(oldObj *Struct) []NonComparableStruct { return oldObj.ListNonComparableField }))...)

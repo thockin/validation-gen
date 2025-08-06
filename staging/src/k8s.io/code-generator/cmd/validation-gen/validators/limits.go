@@ -72,7 +72,8 @@ func (maxLengthTagValidator) GetValidations(context Context, tag codetags.Tag) (
 	if intVal < 0 {
 		return result, fmt.Errorf("must be greater than or equal to zero")
 	}
-	result.AddFunction(Function(maxLengthTagName, DefaultFlags, maxLengthValidator, intVal))
+	fn := Function(maxLengthTagName, DefaultFlags, maxLengthValidator, intVal)
+	result.Items = append(result.Items, ValidationFunctionCall{fn})
 	return result, nil
 }
 
@@ -129,7 +130,8 @@ func (maxItemsTagValidator) GetValidations(context Context, tag codetags.Tag) (V
 		return result, fmt.Errorf("must be greater than or equal to zero")
 	}
 	// Note: maxItems short-circuits other validations.
-	result.AddFunction(Function(maxItemsTagName, ShortCircuit, maxItemsValidator, intVal))
+	fn := Function(maxItemsTagName, ShortCircuit, maxItemsValidator, intVal)
+	result.Items = append(result.Items, ValidationFunctionCall{fn})
 	return result, nil
 }
 
@@ -180,7 +182,8 @@ func (minimumTagValidator) GetValidations(context Context, tag codetags.Tag) (Va
 	if err != nil {
 		return result, fmt.Errorf("failed to parse tag payload as int: %w", err)
 	}
-	result.AddFunction(Function(minimumTagName, DefaultFlags, minimumValidator, intVal))
+	fn := Function(minimumTagName, DefaultFlags, minimumValidator, intVal)
+	result.Items = append(result.Items, ValidationFunctionCall{fn})
 	return result, nil
 }
 

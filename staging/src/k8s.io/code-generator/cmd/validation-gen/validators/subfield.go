@@ -125,7 +125,18 @@ func (stv subfieldTagValidator) GetValidations(context Context, tag codetags.Tag
 		for _, vfn := range validations.Functions {
 			f := Function(subfieldTagName, vfn.Flags, validateSubfield, subname, getFn, equivArg, WrapperFunction{vfn, submemb.Type})
 			f.Cohort = subname
-			result.AddFunction(f)
+			result.Items = append(result.Items, ValidationFunctionCall{f})
+		}
+		for _, item := range validations.Items {
+			if vfn, ok := item.(ValidationFunctionCall); ok {
+				comm := vfn.Comments
+				vfn.Comments = nil
+				f := Function(subfieldTagName, vfn.Flags, validateSubfield, subname, getFn, equivArg, WrapperFunction{vfn.FunctionGen, submemb.Type}).WithComments(comm...)
+				f.Cohort = subname // FIXME: WithCohort?
+				result.Items = append(result.Items, ValidationFunctionCall{f}.WithComment(comm))
+			} else {
+				result.Items = append(result.Items, item)
+			}
 		}
 	}
 	return result, nil

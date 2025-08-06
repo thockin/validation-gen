@@ -309,7 +309,8 @@ func (lv listValidator) GetValidations(context Context) (Validations, error) {
 		}
 		f := Function("listValidator", DefaultFlags, validateUnique, Identifier(matchArg)).
 			WithComment("listType=set requires unique values")
-		result.AddFunction(f)
+		//FIXME: add an AddItem() method?
+		result.Items = append(result.Items, ValidationFunctionCall{f})
 	}
 	// TODO: enable the following once we have a way to either opt-out from this validation
 	// or settle the decision on how to handle the ratcheting cases.
@@ -322,7 +323,7 @@ func (lv listValidator) GetValidations(context Context) (Validations, error) {
 			matchArg := lm.makeListMapMatchFunc(nt.Elem)
 			f := Function("listValidator", DefaultFlags, validateUnique, matchArg).
 				WithComment("listType=map requires unique keys")
-			result.AddFunction(f)
+			result.Items = append(result.Items, ValidationFunctionCall{f})
 		}
 	*/
 
@@ -447,7 +448,7 @@ func (evtv eachValTagValidator) getValidations(fldPath *field.Path, t *types.Typ
 // list or map. For example, if this is a typedef to a list, this is the alias
 // type, not the underlying type.
 func ForEachVal(fldPath *field.Path, t *types.Type, fn FunctionGen) (Validations, error) {
-	return globalEachVal.getValidations(fldPath, t, Validations{Functions: []FunctionGen{fn}})
+	return globalEachVal.getValidations(fldPath, t, Validations{Items: []Validation{ValidationFunctionCall{fn}}})
 }
 
 // t is expected to be the top-most type of the list. For example, if this is a
@@ -505,9 +506,18 @@ func (evtv eachValTagValidator) getListValidations(fldPath *field.Path, t *types
 		comm := vfn.Comments
 		vfn.Comments = nil
 		f := Function(eachValTagName, vfn.Flags, validateEachSliceVal, matchArg, equivArg, WrapperFunction{vfn, nt.Elem}).WithComments(comm...)
-		result.AddFunction(f)
+		result.Items = append(result.Items, ValidationFunctionCall{f})
 	}
-
+	for _, item := range validations.Items {
+		if vfn, ok := item.(ValidationFunctionCall); ok {
+			comm := vfn.Comments
+			vfn.Comments = nil
+			f := Function(eachValTagName, vfn.Flags, validateEachSliceVal, matchArg, equivArg, WrapperFunction{vfn.FunctionGen, nt.Elem}).WithComments(comm...)
+			result.Items = append(result.Items, ValidationFunctionCall{f})
+		} else {
+			result.Items = append(result.Items, item)
+		}
+	}
 	return result, nil
 }
 
@@ -526,9 +536,18 @@ func (evtv eachValTagValidator) getMapValidations(t *types.Type, validations Val
 		comm := vfn.Comments
 		vfn.Comments = nil
 		f := Function(eachValTagName, vfn.Flags, validateEachMapVal, equivArg, WrapperFunction{vfn, nt.Elem}).WithComments(comm...)
-		result.AddFunction(f)
+		result.Items = append(result.Items, ValidationFunctionCall{f})
 	}
-
+	for _, item := range validations.Items {
+		if vfn, ok := item.(ValidationFunctionCall); ok {
+			comm := vfn.Comments
+			vfn.Comments = nil
+			f := Function(eachValTagName, vfn.Flags, validateEachMapVal, equivArg, WrapperFunction{vfn.FunctionGen, nt.Elem}).WithComments(comm...)
+			result.Items = append(result.Items, ValidationFunctionCall{f})
+		} else {
+			result.Items = append(result.Items, item)
+		}
+	}
 	return result, nil
 }
 
@@ -602,7 +621,17 @@ func (ektv eachKeyTagValidator) getValidations(t *types.Type, validations Valida
 		comm := vfn.Comments
 		vfn.Comments = nil
 		f := Function(eachKeyTagName, vfn.Flags, validateEachMapKey, WrapperFunction{vfn, nt.Key}).WithComments(comm...)
-		result.AddFunction(f)
+		result.Items = append(result.Items, ValidationFunctionCall{f})
+	}
+	for _, item := range validations.Items {
+		if vfn, ok := item.(ValidationFunctionCall); ok {
+			comm := vfn.Comments
+			vfn.Comments = nil
+			f := Function(eachKeyTagName, vfn.Flags, validateEachMapKey, WrapperFunction{vfn.FunctionGen, nt.Key}).WithComments(comm...)
+			result.Items = append(result.Items, ValidationFunctionCall{f})
+		} else {
+			result.Items = append(result.Items, item)
+		}
 	}
 	return result, nil
 }
@@ -610,7 +639,7 @@ func (ektv eachKeyTagValidator) getValidations(t *types.Type, validations Valida
 // ForEachKey returns a validation that applies a function to each key of
 // a map.
 func ForEachKey(_ *field.Path, t *types.Type, fn FunctionGen) (Validations, error) {
-	return globalEachKey.getValidations(t, Validations{Functions: []FunctionGen{fn}})
+	return globalEachKey.getValidations(t, Validations{Items: []Validation{ValidationFunctionCall{fn}}})
 }
 
 func (ektv eachKeyTagValidator) Docs() TagDoc {

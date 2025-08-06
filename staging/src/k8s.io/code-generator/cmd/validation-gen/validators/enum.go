@@ -76,7 +76,7 @@ func (etv *enumTagValidator) GetValidations(context Context, _ codetags.Tag) (Va
 		supportVar := Variable(supportVarName, Function(enumTagName, DefaultFlags, setsNew, enum.ValueArgs()...).WithTypeArgs(enum.Name))
 		result.AddVariable(supportVar)
 		fn := Function(enumTagName, DefaultFlags, enumValidator, supportVarName)
-		result.AddFunction(fn)
+		result.Items = append(result.Items, ValidationFunctionCall{fn})
 	}
 
 	return result, nil

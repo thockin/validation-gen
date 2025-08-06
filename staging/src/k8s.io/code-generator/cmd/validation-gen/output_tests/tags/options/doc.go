@@ -50,3 +50,12 @@ type Struct struct {
 type ObjectMeta struct {
 	XEnabledField string `json:"xEnabledField"`
 }
+
+type Hack struct {
+	TypeMeta int
+
+	// +k8s:ifOptionDisabled(FeatureX)=+k8s:forbidden
+	// +k8s:optional
+	// +k8s:maxLength=42
+	NewField string `json:"newField"`
+}

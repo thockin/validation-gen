@@ -102,12 +102,15 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				errs = append(errs, e...)
-				return // do not proceed
-			}
-			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				return // do not proceed
+			// forbidden
+			{
+				if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					errs = append(errs, e...)
+					return // do not proceed
+				}
+				if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					return // do not proceed
+				}
 			}
 			errs = append(errs, validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "field Struct.StringField")...)
 			return
@@ -140,12 +143,15 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				errs = append(errs, e...)
-				return // do not proceed
-			}
-			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				return // do not proceed
+			// forbidden
+			{
+				if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					errs = append(errs, e...)
+					return // do not proceed
+				}
+				if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					return // do not proceed
+				}
 			}
 			errs = append(errs, validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "field Struct.StringTypedefField")...)
 			// call the type's validation function
@@ -182,12 +188,15 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				errs = append(errs, e...)
-				return // do not proceed
-			}
-			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				return // do not proceed
+			// forbidden
+			{
+				if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					errs = append(errs, e...)
+					return // do not proceed
+				}
+				if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					return // do not proceed
+				}
 			}
 			errs = append(errs, validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "field Struct.IntField")...)
 			return
@@ -220,12 +229,15 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				errs = append(errs, e...)
-				return // do not proceed
-			}
-			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
-				return // do not proceed
+			// forbidden
+			{
+				if e := validate.ForbiddenValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					errs = append(errs, e...)
+					return // do not proceed
+				}
+				if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
+					return // do not proceed
+				}
 			}
 			errs = append(errs, validate.FixedResult(ctx, op, fldPath, obj, oldObj, false, "field Struct.IntTypedefField")...)
 			// call the type's validation function

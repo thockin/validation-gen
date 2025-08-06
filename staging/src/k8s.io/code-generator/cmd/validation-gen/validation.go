@@ -963,6 +963,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 			panic(fmt.Sprintf("unexpected type-validations on type %v, kind %s", thisNode.valueType, thisNode.valueType.Kind))
 		}
 		emitComments(validations.Comments, sw)
+		emitCallsToValidators2(c, validations.Items, sw)
 		emitCallsToValidators(c, validations.Functions, sw)
 		if thisNode.valueType.Kind == types.Alias {
 			underlyingNode := thisNode.underlying.node
@@ -972,6 +973,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 				// call its validation function.
 				if validations := thisNode.typeValIterations; g.hasValidations(underlyingNode.elem.node) && !validations.Empty() {
 					emitComments(validations.Comments, sw)
+					emitCallsToValidators2(c, validations.Items, sw)
 					emitCallsToValidators(c, validations.Functions, sw)
 				}
 			case types.Map:
@@ -979,12 +981,14 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 				// call its validation function.
 				if validations := thisNode.typeKeyIterations; g.hasValidations(underlyingNode.key.node) && !validations.Empty() {
 					emitComments(validations.Comments, sw)
+					emitCallsToValidators2(c, validations.Items, sw)
 					emitCallsToValidators(c, validations.Functions, sw)
 				}
 				// If this field is a map and the value-type has validations,
 				// call its validation function.
 				if validations := thisNode.typeValIterations; g.hasValidations(underlyingNode.elem.node) && !validations.Empty() {
 					emitComments(validations.Comments, sw)
+					emitCallsToValidators2(c, validations.Items, sw)
 					emitCallsToValidators(c, validations.Functions, sw)
 				}
 			}
@@ -1064,6 +1068,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 				emitRatchetingCheck(c, fld.childType, bufsw)
 				fldRatchetingChecked = true
 				bufsw.Do("// call field-attached validations\n", nil)
+				emitCallsToValidators2(c, validations.Items, bufsw)
 				emitCallsToValidators(c, validations.Functions, bufsw)
 			}
 
@@ -1092,6 +1097,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 							emitRatchetingCheck(c, fld.childType, bufsw)
 							fldRatchetingChecked = true
 						}
+						emitCallsToValidators2(c, validations.Items, bufsw)
 						emitCallsToValidators(c, validations.Functions, bufsw)
 					}
 					// Descend into this field.
@@ -1105,6 +1111,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 							emitRatchetingCheck(c, fld.childType, bufsw)
 							fldRatchetingChecked = true
 						}
+						emitCallsToValidators2(c, validations.Items, bufsw)
 						emitCallsToValidators(c, validations.Functions, bufsw)
 					}
 					// If this field is a map and the value-type has
@@ -1115,6 +1122,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 							emitRatchetingCheck(c, fld.childType, bufsw)
 							fldRatchetingChecked = true
 						}
+						emitCallsToValidators2(c, validations.Items, bufsw)
 						emitCallsToValidators(c, validations.Functions, bufsw)
 					}
 					// Descend into this field.
@@ -1293,6 +1301,95 @@ func emitCallsToValidators(c *generator.Context, validations []validators.Functi
 		}
 	}
 }
+func emitCallsToValidators2(c *generator.Context, validations []validators.Validation, sw *generator.SnippetWriter) {
+	// Group and sort the inputs.
+	cohorts := sortIntoCohorts2(validations)
+
+	for _, validations := range cohorts {
+		cohortName := validations[0].CohortName()
+		if cohortName != "" {
+			sw.Do("func() { // cohort $.$\n", cohortName)
+		}
+
+		for _, v := range validations {
+			for _, line := range v.GetComment() {
+				sw.Do("// $.$\n", line)
+			}
+
+			switch typed := v.(type) {
+			case validators.ValidationFunctionCall:
+				emitCallToOneValidator(c, typed, sw)
+			case validators.ValidationGroup:
+				scope := len(typed.GetComment()) > 0
+				if scope {
+					sw.Do("{\n", nil)
+				}
+				emitCallsToValidators2(c, typed.Items, sw)
+				if scope {
+					sw.Do("}\n", nil)
+				}
+			case validators.Comment:
+				// Nothing else.
+			default: //FIXME
+				panic("womp womp")
+			}
+		}
+		if cohortName != "" {
+			sw.Do("}()\n", nil)
+		}
+	}
+}
+
+// FIXME: move after chort sorting func
+// FIXME: comment that comments are emitted by the caller of this
+func emitCallToOneValidator(c *generator.Context, v validators.ValidationFunctionCall, sw *generator.SnippetWriter) {
+	isShortCircuit := v.Flags.IsSet(validators.ShortCircuit)
+	isNonError := v.Flags.IsSet(validators.NonError)
+
+	targs := generator.Args{
+		"funcName": c.Universe.Type(v.Function),
+		"field":    mkSymbolArgs(c, fieldPkgSymbols),
+	}
+
+	emitCall := func() {
+		sw.Do("$.funcName|raw$", targs)
+		if typeArgs := v.TypeArgs; len(typeArgs) > 0 {
+			sw.Do("[", nil)
+			for i, typeArg := range typeArgs {
+				sw.Do("$.|raw$", c.Universe.Type(typeArg))
+				if i < len(typeArgs)-1 {
+					sw.Do(",", nil)
+				}
+			}
+			sw.Do("]", nil)
+		}
+		sw.Do("(ctx, op, fldPath, obj, oldObj", targs)
+		for _, arg := range v.Args {
+			sw.Do(", ", nil)
+			toGolangSourceDataLiteral(sw, c, arg)
+		}
+		sw.Do(")", targs)
+	}
+
+	if isShortCircuit {
+		sw.Do("if e := ", nil)
+		emitCall()
+		sw.Do("; len(e) != 0 {\n", nil)
+		if !isNonError {
+			sw.Do("errs = append(errs, e...)\n", nil)
+		}
+		sw.Do("    return // do not proceed\n", nil)
+		sw.Do("}\n", nil)
+	} else {
+		if isNonError {
+			emitCall()
+		} else {
+			sw.Do("errs = append(errs, ", nil)
+			emitCall()
+			sw.Do("...)\n", nil)
+		}
+	}
+}
 
 // sortIntoCohorts groups the inputs into a list of cohorts. Within each
 // cohort, function calls are sorted such that short-circuiting function
@@ -1339,6 +1436,52 @@ func sortIntoCohorts(in []validators.FunctionGen) [][]validators.FunctionGen {
 				sooner = append(sooner, fg)
 			} else {
 				later = append(later, fg)
+			}
+		}
+		sorted := sooner
+		sorted = append(sorted, later...)
+		result = append(result, sorted)
+	}
+	return result
+}
+func sortIntoCohorts2(in []validators.Validation) [][]validators.Validation {
+	defaultCohort := make([]validators.Validation, 0, len(in))
+	namedCohorts := map[string][]validators.Validation{}
+	idx := make([]string, 0, len(in))
+	for _, v := range in {
+		key := v.CohortName()
+		if key == "" {
+			defaultCohort = append(defaultCohort, v)
+		} else {
+			if !slices.Contains(idx, key) {
+				idx = append(idx, key)
+			}
+			namedCohorts[key] = append(namedCohorts[key], v)
+		}
+	}
+	if len(defaultCohort) > 0 {
+		idx = append([]string{""}, idx...)
+	}
+	// NOTE: we do not sort cohorts by name, because we want to preserve
+	// their definition order.
+
+	result := make([][]validators.Validation, 0, len(in))
+	for _, key := range idx {
+		var cohort []validators.Validation
+		if key == "" {
+			cohort = defaultCohort
+		} else {
+			cohort = namedCohorts[key]
+		}
+
+		sooner := make([]validators.Validation, 0, len(cohort))
+		later := make([]validators.Validation, 0, len(cohort))
+
+		for _, v := range cohort {
+			if v.IsPriority() {
+				sooner = append(sooner, v)
+			} else {
+				later = append(later, v)
 			}
 		}
 		sorted := sooner

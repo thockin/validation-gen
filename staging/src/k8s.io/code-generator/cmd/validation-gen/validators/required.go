@@ -94,11 +94,26 @@ func (rtv requirednessTagValidator) doRequired(context Context) (Validations, er
 	// do manual dispatch here.
 	switch util.NativeType(context.Type).Kind {
 	case types.Slice:
-		return Validations{Functions: []FunctionGen{Function(requiredTagName, ShortCircuit, requiredSliceValidator)}}, nil
+		result := Validations{
+			Items: []Validation{
+				ValidationFunctionCall{Function(requiredTagName, ShortCircuit, requiredSliceValidator)},
+			},
+		}
+		return result, nil
 	case types.Map:
-		return Validations{Functions: []FunctionGen{Function(requiredTagName, ShortCircuit, requiredMapValidator)}}, nil
+		result := Validations{
+			Items: []Validation{
+				ValidationFunctionCall{Function(requiredTagName, ShortCircuit, requiredMapValidator)},
+			},
+		}
+		return result, nil
 	case types.Pointer:
-		return Validations{Functions: []FunctionGen{Function(requiredTagName, ShortCircuit, requiredPointerValidator)}}, nil
+		result := Validations{
+			Items: []Validation{
+				ValidationFunctionCall{Function(requiredTagName, ShortCircuit, requiredPointerValidator)},
+			},
+		}
+		return result, nil
 	case types.Struct:
 		// The +k8s:required tag on a non-pointer struct is not supported.
 		// If you encounter this error and believe you have a valid use case
@@ -107,7 +122,12 @@ func (rtv requirednessTagValidator) doRequired(context Context) (Validations, er
 		// this behavior or provide alternative validation mechanisms.
 		return Validations{}, fmt.Errorf("non-pointer structs cannot use the %q tag", requiredTagName)
 	}
-	return Validations{Functions: []FunctionGen{Function(requiredTagName, ShortCircuit, requiredValueValidator)}}, nil
+	result := Validations{
+		Items: []Validation{
+			ValidationFunctionCall{Function(requiredTagName, ShortCircuit, requiredValueValidator)},
+		},
+	}
+	return result, nil
 }
 
 var (
@@ -147,14 +167,25 @@ func (rtv requirednessTagValidator) doOptional(context Context) (Validations, er
 		return Validations{}, err
 	} else if hasDefault {
 		if !util.IsNilableType(context.Type) && zeroDefault {
-			return Validations{Comments: []string{"optional value-type fields with zero-value defaults are purely documentation"}}, nil
+			result := Validations{
+				Items: []Validation{
+					Comment{
+						Lines: []string{
+							"This field is optional; optional value-type fields with",
+							"zero-value defaults are purely for documentation.",
+						},
+						Priority: true, // replaces a ShortCircuit function call
+					},
+				},
+			}
+			return result, nil
 		}
 		validations, err := rtv.doRequired(context)
 		if err != nil {
 			return Validations{}, err
 		}
-		for i, fn := range validations.Functions {
-			validations.Functions[i] = fn.WithComment("optional fields with default values are effectively required")
+		for i, item := range validations.Items {
+			validations.Items[i] = item.WithComment([]string{"optional fields with default values are effectively required"})
 		}
 		return validations, nil
 	}
@@ -165,11 +196,26 @@ func (rtv requirednessTagValidator) doOptional(context Context) (Validations, er
 	// do manual dispatch here.
 	switch util.NativeType(context.Type).Kind {
 	case types.Slice:
-		return Validations{Functions: []FunctionGen{Function(optionalTagName, ShortCircuit|NonError, optionalSliceValidator)}}, nil
+		result := Validations{
+			Items: []Validation{
+				ValidationFunctionCall{Function(optionalTagName, ShortCircuit|NonError, optionalSliceValidator)},
+			},
+		}
+		return result, nil
 	case types.Map:
-		return Validations{Functions: []FunctionGen{Function(optionalTagName, ShortCircuit|NonError, optionalMapValidator)}}, nil
+		result := Validations{
+			Items: []Validation{
+				ValidationFunctionCall{Function(optionalTagName, ShortCircuit|NonError, optionalMapValidator)},
+			},
+		}
+		return result, nil
 	case types.Pointer:
-		return Validations{Functions: []FunctionGen{Function(optionalTagName, ShortCircuit|NonError, optionalPointerValidator)}}, nil
+		result := Validations{
+			Items: []Validation{
+				ValidationFunctionCall{Function(optionalTagName, ShortCircuit|NonError, optionalPointerValidator)},
+			},
+		}
+		return result, nil
 	case types.Struct:
 		// The +k8s:optional tag on a non-pointer struct is not supported.
 		// If you encounter this error and believe you have a valid use case
@@ -178,7 +224,12 @@ func (rtv requirednessTagValidator) doOptional(context Context) (Validations, er
 		// this behavior or provide alternative validation mechanisms.
 		return Validations{}, fmt.Errorf("non-pointer structs cannot use the %q tag", optionalTagName)
 	}
-	return Validations{Functions: []FunctionGen{Function(optionalTagName, ShortCircuit|NonError, optionalValueValidator)}}, nil
+	result := Validations{
+		Items: []Validation{
+			ValidationFunctionCall{Function(optionalTagName, ShortCircuit|NonError, optionalValueValidator)},
+		},
+	}
+	return result, nil
 }
 
 // hasZeroDefault returns whether the field has a default value and whether
@@ -264,25 +315,45 @@ func (requirednessTagValidator) doForbidden(context Context) (Validations, error
 	// example, this prevents any further validation from trying to run on a
 	// nil pointer.
 	switch util.NativeType(context.Type).Kind {
+	//FIXME: should all GetValidations() return a single *ValidationItem (or nil)?
+	//Or maybe a []ValidationItem?
 	case types.Slice:
 		return Validations{
-			Functions: []FunctionGen{
-				Function(forbiddenTagName, ShortCircuit, forbiddenSliceValidator),
-				Function(forbiddenTagName, ShortCircuit|NonError, optionalSliceValidator),
+			Items: []Validation{
+				ValidationGroup{
+					TagName:  forbiddenTagName,
+					Priority: true,
+					Items: []Validation{
+						ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit, forbiddenSliceValidator)},
+						ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit|NonError, optionalSliceValidator)},
+					},
+				},
 			},
 		}, nil
 	case types.Map:
 		return Validations{
-			Functions: []FunctionGen{
-				Function(forbiddenTagName, ShortCircuit, forbiddenMapValidator),
-				Function(forbiddenTagName, ShortCircuit|NonError, optionalMapValidator),
+			Items: []Validation{
+				ValidationGroup{
+					TagName:  forbiddenTagName,
+					Priority: true,
+					Items: []Validation{
+						ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit, forbiddenMapValidator)},
+						ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit|NonError, optionalMapValidator)},
+					},
+				},
 			},
 		}, nil
 	case types.Pointer:
 		return Validations{
-			Functions: []FunctionGen{
-				Function(forbiddenTagName, ShortCircuit, forbiddenPointerValidator),
-				Function(forbiddenTagName, ShortCircuit|NonError, optionalPointerValidator),
+			Items: []Validation{
+				ValidationGroup{
+					TagName:  forbiddenTagName,
+					Priority: true,
+					Items: []Validation{
+						ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit, forbiddenPointerValidator)},
+						ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit|NonError, optionalPointerValidator)},
+					},
+				},
 			},
 		}, nil
 	case types.Struct:
@@ -294,9 +365,16 @@ func (requirednessTagValidator) doForbidden(context Context) (Validations, error
 		return Validations{}, fmt.Errorf("non-pointer structs cannot use the %q tag", forbiddenTagName)
 	}
 	return Validations{
-		Functions: []FunctionGen{
-			Function(forbiddenTagName, ShortCircuit, forbiddenValueValidator),
-			Function(forbiddenTagName, ShortCircuit|NonError, optionalValueValidator),
+		Items: []Validation{
+			ValidationGroup{
+				TagName:  forbiddenTagName,
+				Priority: true,
+				Items: []Validation{
+					ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit, forbiddenValueValidator)},
+					ValidationFunctionCall{Function(forbiddenTagName, ShortCircuit|NonError, optionalValueValidator)},
+				},
+				Comments: []string{"forbidden"}, //FIXME: make this useful or nuke it
+			},
 		},
 	}, nil
 }

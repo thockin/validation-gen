@@ -59,9 +59,11 @@ func (immutableTagValidator) GetValidations(context Context, _ codetags.Tag) (Va
 		// pointer fields, which are directly comparable but not what we need.
 		//
 		// Note: This compares the pointee, not the pointer itself.
-		result.AddFunction(Function(immutableTagName, DefaultFlags, immutableCompareValidator))
+		f := Function(immutableTagName, DefaultFlags, immutableCompareValidator)
+		result.Items = append(result.Items, ValidationFunctionCall{f})
 	} else {
-		result.AddFunction(Function(immutableTagName, DefaultFlags, immutableReflectValidator))
+		f := Function(immutableTagName, DefaultFlags, immutableReflectValidator)
+		result.Items = append(result.Items, ValidationFunctionCall{f})
 	}
 
 	return result, nil

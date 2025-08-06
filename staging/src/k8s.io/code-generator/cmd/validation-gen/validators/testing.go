@@ -75,7 +75,7 @@ func (frtv fixedResultTagValidator) GetValidations(context Context, tag codetags
 	}
 	fn := Function(frtv.TagName(), args.flags, fixedResultValidator, frtv.result, args.msg).WithTypeArgs(args.typeArgs...)
 	fn.Cohort = args.cohort
-	result.AddFunction(fn)
+	result.Items = append(result.Items, ValidationFunctionCall{fn})
 
 	return result, nil
 }

@@ -65,7 +65,7 @@ func (formatTagValidator) GetValidations(context Context, tag codetags.Tag) (Val
 	if formatFunction, err := getFormatValidationFunction(tag.Value); err != nil {
 		return result, err
 	} else {
-		result.AddFunction(formatFunction)
+		result.Items = append(result.Items, ValidationFunctionCall{formatFunction})
 	}
 	return result, nil
 }

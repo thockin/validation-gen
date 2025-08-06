@@ -56,12 +56,13 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 	// field Struct.StringField
 	errs = append(errs,
 		func(fldPath *field.Path, obj, oldObj *string) (errs field.ErrorList) {
-			// optional value-type fields with zero-value defaults are purely documentation
 			// don't revalidate unchanged data
 			if op.Type == operation.Update && (obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj)) {
 				return nil
 			}
 			// call field-attached validations
+			// This field is optional; optional value-type fields with
+			// zero-value defaults are purely for documentation.
 			return
 		}(fldPath.Child("stringField"), &obj.StringField, safe.Field(oldObj, func(oldObj *Struct) *string { return &oldObj.StringField }))...)
 
@@ -84,12 +85,13 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 	// field Struct.IntField
 	errs = append(errs,
 		func(fldPath *field.Path, obj, oldObj *int) (errs field.ErrorList) {
-			// optional value-type fields with zero-value defaults are purely documentation
 			// don't revalidate unchanged data
 			if op.Type == operation.Update && (obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj)) {
 				return nil
 			}
 			// call field-attached validations
+			// This field is optional; optional value-type fields with
+			// zero-value defaults are purely for documentation.
 			return
 		}(fldPath.Child("intField"), &obj.IntField, safe.Field(oldObj, func(oldObj *Struct) *int { return &oldObj.IntField }))...)
 
@@ -112,12 +114,13 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 	// field Struct.BoolField
 	errs = append(errs,
 		func(fldPath *field.Path, obj, oldObj *bool) (errs field.ErrorList) {
-			// optional value-type fields with zero-value defaults are purely documentation
 			// don't revalidate unchanged data
 			if op.Type == operation.Update && (obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj)) {
 				return nil
 			}
 			// call field-attached validations
+			// This field is optional; optional value-type fields with
+			// zero-value defaults are purely for documentation.
 			return
 		}(fldPath.Child("boolField"), &obj.BoolField, safe.Field(oldObj, func(oldObj *Struct) *bool { return &oldObj.BoolField }))...)
 

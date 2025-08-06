@@ -92,7 +92,7 @@ func (v neqTagValidator) GetValidations(context Context, tag codetags.Tag) (Vali
 	}
 
 	fn := Function(v.TagName(), DefaultFlags, neqValidator, disallowedValue)
-	return Validations{Functions: []FunctionGen{fn}}, nil
+	return Validations{Items: []Validation{ValidationFunctionCall{fn}}}, nil
 }
 
 func (v neqTagValidator) Docs() TagDoc {

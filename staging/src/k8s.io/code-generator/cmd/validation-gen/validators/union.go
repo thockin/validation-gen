@@ -301,14 +301,14 @@ func processUnionValidations(context Context, unions unions, varPrefix string,
 
 				extraArgs := append([]any{supportVarName, discriminatorExtractor}, extractorArgs...)
 				fn := Function(tagName, DefaultFlags, discriminatedValidator, extraArgs...)
-				result.Functions = append(result.Functions, fn)
+				result.Items = append(result.Items, ValidationFunctionCall{fn})
 			} else {
 				supportVar := Variable(supportVarName, Function(tagName, DefaultFlags, newUnionMembership, getMemberArgs(u, context, false)...))
 				result.Variables = append(result.Variables, supportVar)
 
 				extraArgs := append([]any{supportVarName}, extractorArgs...)
 				fn := Function(tagName, DefaultFlags, undiscriminatedValidator, extraArgs...)
-				result.Functions = append(result.Functions, fn)
+				result.Items = append(result.Items, ValidationFunctionCall{fn})
 			}
 		}
 	}

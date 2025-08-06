@@ -304,9 +304,112 @@ type TagPayloadDoc struct {
 	Docs string
 }
 
+// FIXME: the With* should go on concrete types
+type Validation interface {
+	CohortName() string
+	IsPriority() bool
+	// FIXME: decide "Comment" vs "Comments"
+	WithComment([]string) Validation
+	GetComment() []string
+}
+
+type ValidationFunctionCall struct {
+	FunctionGen
+}
+
+func (vfc ValidationFunctionCall) CohortName() string {
+	return vfc.Cohort
+}
+func (vfc ValidationFunctionCall) IsPriority() bool {
+	return vfc.Flags.IsSet(ShortCircuit)
+}
+func (vfc ValidationFunctionCall) WithComment(comment []string) Validation {
+	vfc.Comments = append(vfc.Comments, comment...)
+	return vfc
+}
+func (vfc ValidationFunctionCall) GetComment() []string {
+	return vfc.Comments
+}
+
+// FIXME: is this the definition of it or a Call?  Seems like defn right now
+type ValidationFunctionWrapper struct {
+	WrapperFunction
+}
+
+func (vfw ValidationFunctionWrapper) CohortName() string {
+	return "" // FIXME
+}
+func (vfw ValidationFunctionWrapper) IsPriority() bool {
+	return vfw.WrapperFunction.Function.Flags.IsSet(ShortCircuit)
+}
+func (vfw ValidationFunctionWrapper) WithComment(comment []string) Validation {
+	//FIXME: where?
+	return vfw
+}
+func (vfw ValidationFunctionWrapper) GetComment() []string {
+	return vfw.WrapperFunction.Function.Comments
+}
+
+type Comment struct {
+	Lines    []string
+	Priority bool
+	Cohort   string
+}
+
+func (c Comment) CohortName() string {
+	return c.Cohort
+}
+func (c Comment) IsPriority() bool {
+	return c.Priority
+}
+func (c Comment) WithComment(comment []string) Validation {
+	c.Lines = append(c.Lines, comment...)
+	return c
+}
+func (c Comment) GetComment() []string {
+	return c.Lines
+}
+
+type ValidationGroup struct {
+	// TagName is the tag which triggered this function.
+	TagName string
+
+	// Cohort indicates a set of related functions which are processed
+	// together.
+	Cohort string
+
+	//FIXME
+	Priority bool
+
+	//FIXME
+	Comments []string
+
+	//FIXME
+	Items []Validation
+}
+
+func (vg ValidationGroup) CohortName() string {
+	return vg.Cohort
+}
+func (vg ValidationGroup) IsPriority() bool {
+	return vg.Priority
+}
+func (vg ValidationGroup) WithComment(comment []string) Validation {
+	vg.Comments = append(vg.Comments, comment...)
+	return vg
+}
+func (vg ValidationGroup) GetComment() []string {
+	return vg.Comments
+}
+
+//FIXME: local variables and function groups
+
 // Validations define the function calls and variables to generate to perform
 // validation.
 type Validations struct {
+	// FIXME:
+	Items []Validation
+
 	// Functions hold the function calls that should be generated to perform
 	// validation.  These functions may not be called in order - they may be
 	// sorted based on their flags and other criteria.
@@ -353,7 +456,7 @@ func (v *Validations) Empty() bool {
 }
 
 func (v *Validations) Len() int {
-	return len(v.Functions) + len(v.Variables) + len(v.Comments)
+	return len(v.Functions) + len(v.Variables) + len(v.Comments) + len(v.Items)
 }
 
 func (v *Validations) AddFunction(fn FunctionGen) {
@@ -372,6 +475,7 @@ func (v *Validations) Add(o Validations) {
 	v.Functions = append(v.Functions, o.Functions...)
 	v.Variables = append(v.Variables, o.Variables...)
 	v.Comments = append(v.Comments, o.Comments...)
+	v.Items = append(v.Items, o.Items...)
 	v.OpaqueType = v.OpaqueType || o.OpaqueType
 	v.OpaqueKeyType = v.OpaqueKeyType || o.OpaqueKeyType
 	v.OpaqueValType = v.OpaqueValType || o.OpaqueValType

@@ -182,11 +182,6 @@ func (itv *itemTagValidator) GetValidations(context Context, tag codetags.Tag) (
 		equivArg = Identifier(validateSemanticDeepEqual)
 	}
 
-	for _, vfn := range validations.Functions {
-		f := Function(itemTagName, vfn.Flags, validateSliceItem, matchArg, equivArg, WrapperFunction{vfn, elemT})
-		f.Cohort = itemKey
-		result.Items = append(result.Items, ValidationFunctionCall{f})
-	}
 	for _, item := range validations.Items {
 		if vfn, ok := item.(ValidationFunctionCall); ok {
 			comm := vfn.Comments

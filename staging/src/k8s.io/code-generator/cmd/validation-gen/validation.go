@@ -963,8 +963,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 			panic(fmt.Sprintf("unexpected type-validations on type %v, kind %s", thisNode.valueType, thisNode.valueType.Kind))
 		}
 		emitComments(validations.Comments, sw)
-		emitCallsToValidators2(c, validations.Items, sw)
-		emitCallsToValidators(c, validations.Functions, sw)
+		emitCallsToValidators(c, validations.Items, sw)
 		if thisNode.valueType.Kind == types.Alias {
 			underlyingNode := thisNode.underlying.node
 			switch underlyingNode.valueType.Kind {
@@ -973,23 +972,20 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 				// call its validation function.
 				if validations := thisNode.typeValIterations; g.hasValidations(underlyingNode.elem.node) && !validations.Empty() {
 					emitComments(validations.Comments, sw)
-					emitCallsToValidators2(c, validations.Items, sw)
-					emitCallsToValidators(c, validations.Functions, sw)
+					emitCallsToValidators(c, validations.Items, sw)
 				}
 			case types.Map:
 				// If this field is a map and the key-type has validations,
 				// call its validation function.
 				if validations := thisNode.typeKeyIterations; g.hasValidations(underlyingNode.key.node) && !validations.Empty() {
 					emitComments(validations.Comments, sw)
-					emitCallsToValidators2(c, validations.Items, sw)
-					emitCallsToValidators(c, validations.Functions, sw)
+					emitCallsToValidators(c, validations.Items, sw)
 				}
 				// If this field is a map and the value-type has validations,
 				// call its validation function.
 				if validations := thisNode.typeValIterations; g.hasValidations(underlyingNode.elem.node) && !validations.Empty() {
 					emitComments(validations.Comments, sw)
-					emitCallsToValidators2(c, validations.Items, sw)
-					emitCallsToValidators(c, validations.Functions, sw)
+					emitCallsToValidators(c, validations.Items, sw)
 				}
 			}
 		}
@@ -1068,8 +1064,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 				emitRatchetingCheck(c, fld.childType, bufsw)
 				fldRatchetingChecked = true
 				bufsw.Do("// call field-attached validations\n", nil)
-				emitCallsToValidators2(c, validations.Items, bufsw)
-				emitCallsToValidators(c, validations.Functions, bufsw)
+				emitCallsToValidators(c, validations.Items, bufsw)
 			}
 
 			// If the node is nil, this must be a type in a package we are not
@@ -1097,8 +1092,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 							emitRatchetingCheck(c, fld.childType, bufsw)
 							fldRatchetingChecked = true
 						}
-						emitCallsToValidators2(c, validations.Items, bufsw)
-						emitCallsToValidators(c, validations.Functions, bufsw)
+						emitCallsToValidators(c, validations.Items, bufsw)
 					}
 					// Descend into this field.
 					g.emitValidationForChild(c, fld, bufsw)
@@ -1111,8 +1105,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 							emitRatchetingCheck(c, fld.childType, bufsw)
 							fldRatchetingChecked = true
 						}
-						emitCallsToValidators2(c, validations.Items, bufsw)
-						emitCallsToValidators(c, validations.Functions, bufsw)
+						emitCallsToValidators(c, validations.Items, bufsw)
 					}
 					// If this field is a map and the value-type has
 					// validations, call its validation function.
@@ -1122,8 +1115,7 @@ func (g *genValidations) emitValidationForChild(c *generator.Context, thisChild 
 							emitRatchetingCheck(c, fld.childType, bufsw)
 							fldRatchetingChecked = true
 						}
-						emitCallsToValidators2(c, validations.Items, bufsw)
-						emitCallsToValidators(c, validations.Functions, bufsw)
+						emitCallsToValidators(c, validations.Items, bufsw)
 					}
 					// Descend into this field.
 					g.emitValidationForChild(c, fld, bufsw)
@@ -1236,74 +1228,9 @@ func emitRatchetingCheck(c *generator.Context, t *types.Type, sw *generator.Snip
 // Emitted code assumes that the value in question is always a pair of nilable
 // variables named "obj" and "oldObj", and the field path to this value is
 // named "fldPath".
-func emitCallsToValidators(c *generator.Context, validations []validators.FunctionGen, sw *generator.SnippetWriter) {
+func emitCallsToValidators(c *generator.Context, validations []validators.Validation, sw *generator.SnippetWriter) {
 	// Group and sort the inputs.
 	cohorts := sortIntoCohorts(validations)
-
-	for _, validations := range cohorts {
-		cohortName := validations[0].Cohort
-		if cohortName != "" {
-			sw.Do("func() { // cohort $.$\n", cohortName)
-		}
-		for _, v := range validations {
-			isShortCircuit := v.Flags.IsSet(validators.ShortCircuit)
-			isNonError := v.Flags.IsSet(validators.NonError)
-
-			targs := generator.Args{
-				"funcName": c.Universe.Type(v.Function),
-				"field":    mkSymbolArgs(c, fieldPkgSymbols),
-			}
-
-			emitCall := func() {
-				sw.Do("$.funcName|raw$", targs)
-				if typeArgs := v.TypeArgs; len(typeArgs) > 0 {
-					sw.Do("[", nil)
-					for i, typeArg := range typeArgs {
-						sw.Do("$.|raw$", c.Universe.Type(typeArg))
-						if i < len(typeArgs)-1 {
-							sw.Do(",", nil)
-						}
-					}
-					sw.Do("]", nil)
-				}
-				sw.Do("(ctx, op, fldPath, obj, oldObj", targs)
-				for _, arg := range v.Args {
-					sw.Do(", ", nil)
-					toGolangSourceDataLiteral(sw, c, arg)
-				}
-				sw.Do(")", targs)
-			}
-
-			for _, comment := range v.Comments {
-				sw.Do("// $.$\n", comment)
-			}
-			if isShortCircuit {
-				sw.Do("if e := ", nil)
-				emitCall()
-				sw.Do("; len(e) != 0 {\n", nil)
-				if !isNonError {
-					sw.Do("errs = append(errs, e...)\n", nil)
-				}
-				sw.Do("    return // do not proceed\n", nil)
-				sw.Do("}\n", nil)
-			} else {
-				if isNonError {
-					emitCall()
-				} else {
-					sw.Do("errs = append(errs, ", nil)
-					emitCall()
-					sw.Do("...)\n", nil)
-				}
-			}
-		}
-		if cohortName != "" {
-			sw.Do("}()\n", nil)
-		}
-	}
-}
-func emitCallsToValidators2(c *generator.Context, validations []validators.Validation, sw *generator.SnippetWriter) {
-	// Group and sort the inputs.
-	cohorts := sortIntoCohorts2(validations)
 
 	for _, validations := range cohorts {
 		cohortName := validations[0].CohortName()
@@ -1324,7 +1251,7 @@ func emitCallsToValidators2(c *generator.Context, validations []validators.Valid
 				if scope {
 					sw.Do("{\n", nil)
 				}
-				emitCallsToValidators2(c, typed.Items, sw)
+				emitCallsToValidators(c, typed.Items, sw)
 				if scope {
 					sw.Do("}\n", nil)
 				}
@@ -1396,55 +1323,7 @@ func emitCallToOneValidator(c *generator.Context, v validators.ValidationFunctio
 // calls are handled before others. The first cohort is always the
 // default cohort (named "") if it exists. Other cohorts are returned in
 // the order they were defined in the input.
-func sortIntoCohorts(in []validators.FunctionGen) [][]validators.FunctionGen {
-	defaultCohort := make([]validators.FunctionGen, 0, len(in))
-	namedCohorts := map[string][]validators.FunctionGen{}
-	idx := make([]string, 0, len(in))
-	for _, fg := range in {
-		key := fg.Cohort
-		if key == "" {
-			defaultCohort = append(defaultCohort, fg)
-		} else {
-			if !slices.Contains(idx, key) {
-				idx = append(idx, key)
-			}
-			namedCohorts[key] = append(namedCohorts[key], fg)
-		}
-	}
-	if len(defaultCohort) > 0 {
-		idx = append([]string{""}, idx...)
-	}
-	// NOTE: we do not sort cohorts by name, because we want to preserve
-	// their definition order.
-
-	result := make([][]validators.FunctionGen, 0, len(in))
-	for _, key := range idx {
-		var cohort []validators.FunctionGen
-		if key == "" {
-			cohort = defaultCohort
-		} else {
-			cohort = namedCohorts[key]
-		}
-
-		sooner := make([]validators.FunctionGen, 0, len(cohort))
-		later := make([]validators.FunctionGen, 0, len(cohort))
-
-		for _, fg := range cohort {
-			isShortCircuit := (fg.Flags.IsSet(validators.ShortCircuit))
-
-			if isShortCircuit {
-				sooner = append(sooner, fg)
-			} else {
-				later = append(later, fg)
-			}
-		}
-		sorted := sooner
-		sorted = append(sorted, later...)
-		result = append(result, sorted)
-	}
-	return result
-}
-func sortIntoCohorts2(in []validators.Validation) [][]validators.Validation {
+func sortIntoCohorts(in []validators.Validation) [][]validators.Validation {
 	defaultCohort := make([]validators.Validation, 0, len(in))
 	namedCohorts := map[string][]validators.Validation{}
 	idx := make([]string, 0, len(in))

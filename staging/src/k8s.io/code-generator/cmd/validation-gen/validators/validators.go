@@ -313,6 +313,26 @@ type Validation interface {
 	GetComment() []string
 }
 
+// FIXME: name
+// Functions hold the function calls that should be generated to perform
+// validation.  These functions may not be called in order - they may be
+// sorted based on their flags and other criteria.
+//
+// Each function's signature must be of the form:
+//
+//	func(
+//	     // standard arguments
+//	     ctx context.Context
+//	     op operation.Operation,
+//	     fldPath field.Path,
+//	     value, oldValue <ValueType>, // always nilable
+//	     // additional arguments (optional)
+//	     Args[0] <Args[0]Type>,
+//	     Args[1] <Args[1]Type>,
+//	     ...
+//	     Args[N] <Args[N]Type>)
+//
+// The standard arguments are not included in the FunctionGen.Args list.
 type ValidationFunctionCall struct {
 	FunctionGen
 }
@@ -410,26 +430,6 @@ type Validations struct {
 	// FIXME:
 	Items []Validation
 
-	// Functions hold the function calls that should be generated to perform
-	// validation.  These functions may not be called in order - they may be
-	// sorted based on their flags and other criteria.
-	//
-	// Each function's signature must be of the form:
-	//   func(
-	//        // standard arguments
-	//        ctx context.Context
-	//        op operation.Operation,
-	//        fldPath field.Path,
-	//        value, oldValue <ValueType>, // always nilable
-	//        // additional arguments (optional)
-	//        Args[0] <Args[0]Type>,
-	//        Args[1] <Args[1]Type>,
-	//        ...
-	//        Args[N] <Args[N]Type>)
-	//
-	// The standard arguments are not included in the FunctionGen.Args list.
-	Functions []FunctionGen
-
 	// Variables hold any variables which must be generated to perform
 	// validation.  Variables are not permitted in every context.
 	Variables []VariableGen
@@ -456,11 +456,7 @@ func (v *Validations) Empty() bool {
 }
 
 func (v *Validations) Len() int {
-	return len(v.Functions) + len(v.Variables) + len(v.Comments) + len(v.Items)
-}
-
-func (v *Validations) AddFunction(fn FunctionGen) {
-	v.Functions = append(v.Functions, fn)
+	return len(v.Variables) + len(v.Comments) + len(v.Items)
 }
 
 func (v *Validations) AddVariable(vr VariableGen) {
@@ -472,7 +468,6 @@ func (v *Validations) AddComment(comment string) {
 }
 
 func (v *Validations) Add(o Validations) {
-	v.Functions = append(v.Functions, o.Functions...)
 	v.Variables = append(v.Variables, o.Variables...)
 	v.Comments = append(v.Comments, o.Comments...)
 	v.Items = append(v.Items, o.Items...)

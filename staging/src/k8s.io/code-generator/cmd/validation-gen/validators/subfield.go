@@ -122,11 +122,6 @@ func (stv subfieldTagValidator) GetValidations(context Context, tag codetags.Tag
 			equivArg = Identifier(validateSemanticDeepEqual)
 		}
 
-		for _, vfn := range validations.Functions {
-			f := Function(subfieldTagName, vfn.Flags, validateSubfield, subname, getFn, equivArg, WrapperFunction{vfn, submemb.Type})
-			f.Cohort = subname
-			result.Items = append(result.Items, ValidationFunctionCall{f})
-		}
 		for _, item := range validations.Items {
 			if vfn, ok := item.(ValidationFunctionCall); ok {
 				comm := vfn.Comments

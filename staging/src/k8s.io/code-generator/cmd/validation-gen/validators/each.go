@@ -502,12 +502,6 @@ func (evtv eachValTagValidator) getListValidations(fldPath *field.Path, t *types
 		// The matchArg and equivArg are both nil.
 	}
 
-	for _, vfn := range validations.Functions {
-		comm := vfn.Comments
-		vfn.Comments = nil
-		f := Function(eachValTagName, vfn.Flags, validateEachSliceVal, matchArg, equivArg, WrapperFunction{vfn, nt.Elem}).WithComments(comm...)
-		result.Items = append(result.Items, ValidationFunctionCall{f})
-	}
 	for _, item := range validations.Items {
 		if vfn, ok := item.(ValidationFunctionCall); ok {
 			comm := vfn.Comments
@@ -531,12 +525,6 @@ func (evtv eachValTagValidator) getMapValidations(t *types.Type, validations Val
 	equivArg := Identifier(validateSemanticDeepEqual)
 	if util.IsDirectComparable(util.NonPointer(util.NativeType(nt.Elem))) {
 		equivArg = Identifier(validateDirectEqual)
-	}
-	for _, vfn := range validations.Functions {
-		comm := vfn.Comments
-		vfn.Comments = nil
-		f := Function(eachValTagName, vfn.Flags, validateEachMapVal, equivArg, WrapperFunction{vfn, nt.Elem}).WithComments(comm...)
-		result.Items = append(result.Items, ValidationFunctionCall{f})
 	}
 	for _, item := range validations.Items {
 		if vfn, ok := item.(ValidationFunctionCall); ok {
@@ -617,12 +605,6 @@ func (ektv eachKeyTagValidator) getValidations(t *types.Type, validations Valida
 	nt := util.NativeType(t)
 	result := Validations{}
 	result.OpaqueKeyType = validations.OpaqueType
-	for _, vfn := range validations.Functions {
-		comm := vfn.Comments
-		vfn.Comments = nil
-		f := Function(eachKeyTagName, vfn.Flags, validateEachMapKey, WrapperFunction{vfn, nt.Key}).WithComments(comm...)
-		result.Items = append(result.Items, ValidationFunctionCall{f})
-	}
 	for _, item := range validations.Items {
 		if vfn, ok := item.(ValidationFunctionCall); ok {
 			comm := vfn.Comments

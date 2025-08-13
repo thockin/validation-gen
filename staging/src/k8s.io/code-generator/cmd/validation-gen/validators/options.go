@@ -69,11 +69,6 @@ func (itv ifTagValidator) GetValidations(context Context, tag codetags.Tag) (Val
 	if validations, err := itv.validator.ExtractValidations(context, *tag.ValueTag); err != nil {
 		return Validations{}, err
 	} else {
-		for _, fn := range validations.Functions {
-			result.Variables = append(result.Variables, validations.Variables...)
-			f := Function(itv.TagName(), fn.Flags, ifOption, optionArg.Value, itv.enabled, WrapperFunction{Function: fn, ObjType: context.Type})
-			result.Items = append(result.Items, ValidationFunctionCall{f})
-		}
 		for _, item := range validations.Items {
 			if fn, ok := item.(ValidationFunctionCall); ok {
 				f := Function(itv.TagName(), fn.Flags, ifOption, optionArg.Value, itv.enabled, WrapperFunction{Function: fn.FunctionGen, ObjType: context.Type})

@@ -147,7 +147,12 @@ func (rtv requirednessTagValidator) doOptional(context Context) (Validations, er
 		return Validations{}, err
 	} else if hasDefault {
 		if !util.IsNilableType(context.Type) && zeroDefault {
-			return Validations{Comments: []string{"optional value-type fields with zero-value defaults are purely documentation"}}, nil
+			return Validations{
+				Comments: []string{
+					"This field is optional; optional value-type fields with",
+					"zero-value defaults are purely for documentation.",
+				},
+			}, nil
 		}
 		validations, err := rtv.doRequired(context)
 		if err != nil {

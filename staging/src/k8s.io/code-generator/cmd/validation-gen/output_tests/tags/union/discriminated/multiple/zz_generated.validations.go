@@ -48,7 +48,10 @@ func RegisterValidations(scheme *testscheme.Scheme) error {
 	return nil
 }
 
+// Union members for type k8s.io/code-generator/cmd/validation-gen/output_tests/tags/union/discriminated/multiple.Struct
 var unionMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_union_discriminated_multiple_Struct_union1 = validate.NewDiscriminatedUnionMembership("d1", validate.NewDiscriminatedUnionMember("u1m1", "U1M1"), validate.NewDiscriminatedUnionMember("u1m2", "U1M2"))
+
+// Union members for type k8s.io/code-generator/cmd/validation-gen/output_tests/tags/union/discriminated/multiple.Struct
 var unionMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_union_discriminated_multiple_Struct_union2 = validate.NewDiscriminatedUnionMembership("d2", validate.NewDiscriminatedUnionMember("u2m1", "U2M1"), validate.NewDiscriminatedUnionMember("u2m2", "U2M2"))
 
 // Validate_Struct validates an instance of Struct according

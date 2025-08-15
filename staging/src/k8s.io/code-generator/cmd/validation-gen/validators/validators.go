@@ -511,6 +511,16 @@ type VariableGen struct {
 	// Initializer is the value to initialize the variable with.
 	// Initializer may be any function call or literal type supported by toGolangSourceDataLiteral.
 	Initializer any
+
+	// Comments holds optional comments that should be added to the generated
+	// code (without the leading "//").
+	Comments []string
+}
+
+// WithComments returns a new VariableGen with a comment.
+func (vg VariableGen) WithComments(comments ...string) VariableGen {
+	vg.Comments = append(vg.Comments, comments...)
+	return vg
 }
 
 // WrapperFunction describes a function literal which has the fingerprint of a

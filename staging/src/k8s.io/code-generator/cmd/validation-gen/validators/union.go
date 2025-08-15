@@ -289,10 +289,16 @@ func processUnionValidations(context Context, unions unions, varPrefix string,
 				}
 			}
 
+			typeOrField := "field"
+			if context.Scope == ScopeType {
+				typeOrField = "type"
+			}
+			comment := fmt.Sprintf("Union members for %s %s", typeOrField, context.Path.String())
 			if u.discriminator != nil {
 				supportVar := Variable(supportVarName,
 					Function(tagName, DefaultFlags, newDiscriminatedUnionMembership,
-						append([]any{*u.discriminator}, getMemberArgs(u, context, true)...)...))
+						append([]any{*u.discriminator}, getMemberArgs(u, context, true)...)...)).
+					WithComments(comment)
 				result.Variables = append(result.Variables, supportVar)
 
 				discriminatorExtractor := FunctionLiteral{
@@ -305,7 +311,8 @@ func processUnionValidations(context Context, unions unions, varPrefix string,
 				fn := Function(tagName, DefaultFlags, discriminatedValidator, extraArgs...)
 				result.Functions = append(result.Functions, fn)
 			} else {
-				supportVar := Variable(supportVarName, Function(tagName, DefaultFlags, newUnionMembership, getMemberArgs(u, context, false)...))
+				supportVar := Variable(supportVarName, Function(tagName, DefaultFlags, newUnionMembership, getMemberArgs(u, context, false)...)).
+					WithComments(comment)
 				result.Variables = append(result.Variables, supportVar)
 
 				extraArgs := append([]any{supportVarName}, extractorArgs...)

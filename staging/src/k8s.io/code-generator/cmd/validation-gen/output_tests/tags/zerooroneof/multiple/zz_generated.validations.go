@@ -48,7 +48,10 @@ func RegisterValidations(scheme *testscheme.Scheme) error {
 	return nil
 }
 
+// Union members for type k8s.io/code-generator/cmd/validation-gen/output_tests/tags/zerooroneof/multiple.Struct
 var zeroOrOneOfMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_zerooroneof_multiple_Struct_union1 = validate.NewUnionMembership(validate.NewUnionMember("u1m1"), validate.NewUnionMember("u1m2"))
+
+// Union members for type k8s.io/code-generator/cmd/validation-gen/output_tests/tags/zerooroneof/multiple.Struct
 var zeroOrOneOfMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_zerooroneof_multiple_Struct_union2 = validate.NewUnionMembership(validate.NewUnionMember("u2m1"), validate.NewUnionMember("u2m2"))
 
 // Validate_Struct validates an instance of Struct according

@@ -69,6 +69,7 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 	return errs
 }
 
+// Union members for type k8s.io/code-generator/cmd/validation-gen/output_tests/tags/item/zerorooneof/typedef.TaskList
 var zeroOrOneOfMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_item_zerorooneof_typedef_TaskList_ = validate.NewUnionMembership(validate.NewUnionMember("TaskList[{\"name\": \"succeeded\"}]"), validate.NewUnionMember("TaskList[{\"name\": \"failed\"}]"))
 
 // Validate_TaskList validates an instance of TaskList according

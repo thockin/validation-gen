@@ -49,6 +49,7 @@ func RegisterValidations(scheme *testscheme.Scheme) error {
 	return nil
 }
 
+// Union members for field k8s.io/code-generator/cmd/validation-gen/output_tests/tags/item/union/simple.Struct.tasks
 var unionMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_item_union_simple_Struct_tasks_ = validate.NewUnionMembership(validate.NewUnionMember("tasks[{\"name\": \"succeeded\"}]"), validate.NewUnionMember("tasks[{\"name\": \"failed\"}]"))
 
 // Validate_Struct validates an instance of Struct according

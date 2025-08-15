@@ -1411,10 +1411,12 @@ func (g *genValidations) emitValidationVariables(c *generator.Context, t *types.
 			return cmp.Compare(a.Variable.Name, b.Variable.Name)
 		})
 		for _, variable := range variables {
+			for _, comment := range variable.Comments {
+				sw.Do("// $.$\n", comment)
+			}
 			targs := generator.Args{
 				"varName": c.Universe.Type(types.Name(variable.Variable)),
 			}
-
 			sw.Do("var $.varName|private$ = ", targs)
 			toGolangSourceDataLiteral(sw, c, variable.Initializer)
 			sw.Do("\n", nil)
